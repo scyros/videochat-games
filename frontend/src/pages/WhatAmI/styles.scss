@@ -1,0 +1,18 @@
+.room, .game {
+  height: 100%;
+  width: 100%;
+}
+
+.room {
+  .game {
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  @media screen and (orientation: landscape) {
+    .game {
+      flex-direction: row;
+    }
+  }
+}

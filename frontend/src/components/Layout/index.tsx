@@ -2,9 +2,13 @@ import React from 'react';
 
 import './styles.scss';
 
-export const Layout: React.FunctionComponent = props => (
-  <div className="main-layout">
-    {props.children}
+interface LayoutProps {
+  fullHeight?: boolean;
+}
+
+export const Layout: React.SFC<LayoutProps> = ({ fullHeight, children }) => (
+  <div className={`main-layout${fullHeight ? ' full-height' : ''}`}>
+    {children}
     <footer>
       <div className="container is-fluid">
         <a href="/about" className="has-text-light is-size-7">

@@ -4,9 +4,17 @@ import { withRouter, RouteComponentProps } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
 import { v4 as uuidv4 } from 'uuid';
 
+import { CurrentPlayer, Layout } from '../../components';
 import { RootState } from '../../store';
 
-import { joinMe, selectNamespace } from './store';
+import {
+  currentPlayer,
+  imHostPlayer,
+  joinMe,
+  localPlayer,
+  namespace,
+  myId,
+} from './store';
 
 import './styles.scss';
 
@@ -33,16 +41,27 @@ class GameRoom extends React.PureComponent<GameRoomProps, GameRoomState> {
   }
 
   render() {
+    const { currentPlayer } = this.props;
+
     return (
-      <div className="gameroom">
-        <h1>Hola</h1>
-      </div>
+      <Layout fullHeight>
+        <div className="room">
+          <div className="game">
+            {currentPlayer ? <CurrentPlayer player={currentPlayer} /> : <div />}
+            <div className="players"></div>
+          </div>
+        </div>
+      </Layout>
     );
   }
 }
 
 const mapStateToProps = (state: RootState) => ({
-  namespace: selectNamespace(state),
+  currentPlayer: currentPlayer(state),
+  imHostPlayer: imHostPlayer(state),
+  localPlayer: localPlayer(state),
+  myId: myId(state),
+  namespace: namespace(state),
 });
 const mapDispatchToProps = (dispatch: Dispatch) => ({
   ...bindActionCreators({
@@ -53,4 +72,4 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export default withRouter(connect(
   mapStateToProps,
   mapDispatchToProps
-)(withRouter(GameRoom)));
+)(GameRoom));

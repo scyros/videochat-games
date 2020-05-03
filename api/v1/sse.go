@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 // Client represents an connection with a browser
@@ -16,11 +17,16 @@ type Client struct {
 
 // Message represents a message to be sent to a client
 type Message struct {
-	From      string       `json:"from"`
-	Namespace string       `json:"ns"`
-	Payload   *interface{} `json:"payload"`
-	To        string       `json:"to"`
-	Type      string       `json:"type"`
+	From      string      `json:"from"`
+	Namespace string      `json:"ns"`
+	Payload   interface{} `json:"payload"`
+	To        string      `json:"to"`
+	Type      string      `json:"type"`
+}
+
+// Payload for messages created in the server
+type Payload struct {
+	Timestamp int64
 }
 
 // SSEServer is the responsible for messages delivery
@@ -109,6 +115,7 @@ func (sse *SSEServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		From:      client.ID,
 		Namespace: client.Namespace,
 		Type:      "join",
+		Payload:   &Payload{Timestamp: time.Now().UTC().UnixNano() / 1e6},
 	}
 	sse.Broadcast(msg)
 
@@ -121,6 +128,7 @@ func (sse *SSEServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			From:      client.ID,
 			Namespace: client.Namespace,
 			Type:      "leave",
+			Payload:   &Payload{Timestamp: time.Now().UTC().UnixNano() / 1e6},
 		}
 		sse.Broadcast(msg)
 	}()
