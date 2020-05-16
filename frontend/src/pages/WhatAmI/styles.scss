@@ -28,7 +28,7 @@
       .currentPlayerContainer {
         flex: 66.6666%;
         height: 480px;
-        video {
+        .video {
           height: 480px;
         }
       }
@@ -36,7 +36,9 @@
         flex: 33.3333%;
         .playerContainer {
           height: 240px;
-          video {
+          align-items: flex-start;
+          justify-content: flex-start;
+          .video {
             height: 240px;
           }
         }
@@ -50,7 +52,7 @@
       .playerContainer {
         flex: 33.3333%;
         max-width: 33.3333%;
-        video {
+        .video {
           max-width: 100%;
           height: 240px;
         }
@@ -65,7 +67,7 @@
       .currentPlayerContainer {
         width: 100vw;
         height: 100vw;
-        video {
+        .video {
           width: 100vw;
         }
       }
@@ -76,7 +78,7 @@
           flex: 50vw;
           max-width: 50vw;
           height: 50vw;
-          video {
+          .video {
             max-width: 100%;
           }
         }
@@ -88,7 +90,7 @@
       .playerContainer {
         flex: 50vw;
         max-width: 50vw;
-        video {
+        .video {
           max-width: 100%;
         }
       }

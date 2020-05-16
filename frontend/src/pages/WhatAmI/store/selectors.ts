@@ -14,6 +14,17 @@ export const imHostPlayer = createSelector(
 export const currentPlayer = createSelector([gameRoom], gr => gr.players.get(gr.currentPlayerId));
 export const players = createSelector(
   [gameRoom],
-  gr => Array.from(gr.players.values()).filter(p => p.id !== gr.currentPlayerId)
-    .sort((a, b) => a.join - b.join),
+  gr => Array.from(gr.players.values())
+    .sort((a, b) => a.join - b.join)
+    .filter(p => p.id !== gr.currentPlayerId),
+);
+export const nextTurn = createSelector(
+  [gameRoom, currentPlayer],
+  (gr, currentPlayer) => {
+    const players = Array.from(gr.players.values())
+      .sort((a, b) => a.join - b.join);
+    const currentPlayerIndex = players.findIndex(p => currentPlayer?.id === p.id);
+    const nextPlayerIndex = (currentPlayerIndex === (gr.players.size - 1) ? -1 : currentPlayerIndex) + 1;
+    return players[nextPlayerIndex];
+  },
 );

@@ -1,7 +1,7 @@
 import { Action, Dispatch } from 'redux';
 import { put, takeEvery } from 'redux-saga/effects';
 
-import { Api, IncomingMessageAction, INCOMING_MESSAGE } from '../api';
+import { Api, IncomingMessageAction, INCOMING_MESSAGE } from '../Api';
 
 export const LOCALSTREAM_AVAILABLE = 'LOCALSTREAM_AVAILABLE';
 export const REMOTESTREAM_AVAILABLE = 'REMOTESTREAM_AVAILABLE';
@@ -39,43 +39,63 @@ export class PeerConnection {
   private localId: string;
   private pc: RTCPeerConnection;
   private remoteId: string;
+  private started: boolean = false;
 
-  private static async onApiMessage({ payload: { msg } }: IncomingMessageAction) {
+  private static * onApiMessage({ payload: { msg } }: IncomingMessageAction) {
     if (!AllowedMessagesTypes.some(t => msg.type === t)) return;
 
+    const { from, payload, type } = msg;
+    const peerConnection = Array.from(PeerConnection.connections.values())
+      .filter(p => p.remoteId === from)[0];
+    if (!peerConnection) {
+      console.warn(`Player ${from} is sending a message of type ${type} and has no peer connection.`);
+      return;
+    }
+
+    if (type === MessagesTypes.NEW_ICE_CANDIDATE)
+      yield PeerConnection.onNewICECandidate(peerConnection, payload);
+    
+    if (type === MessagesTypes.OFFER)
+      yield PeerConnection.onOffer(peerConnection, from!, payload);
+    
+    if (type === MessagesTypes.ANSWER)
+      yield PeerConnection.onAnswer(peerConnection, payload);
+  }
+
+  private static * onAnswer(pc: PeerConnection, payload: any) {
     try {
-      const { from, payload, type } = msg;
-      const peerConnection = Array.from(PeerConnection.connections.values())
-        .filter(p => p.remoteId === from)[0];
-      if (!peerConnection) {
-        console.warn(`Player ${from} is sending a message of type ${type} and has no peer connection.`);
-        return;
-      }
+      const { description } = payload;
+      yield pc.pc.setRemoteDescription(description);
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
-      if (type === MessagesTypes.NEW_ICE_CANDIDATE) {
-        const { candidate } = payload;
-        await peerConnection.pc.addIceCandidate(candidate);
-      } else if (type === MessagesTypes.OFFER) {
-        const { description } = payload;
-        if (peerConnection.pc.signalingState !== 'stable') {
-          await Promise.all([
-            peerConnection.pc.setLocalDescription({ type: 'rollback' }),
-            peerConnection.pc.setRemoteDescription(description),
-          ]);
-        } else {
-          await peerConnection.pc.setRemoteDescription(description);
-        }
+  private static * onNewICECandidate(pc: PeerConnection, payload: any) {
+    try {
+      const { candidate } = payload;
+      yield pc.pc.addIceCandidate(candidate);
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
-        const answer = await peerConnection.pc.createAnswer();
-        await peerConnection.pc.setLocalDescription(answer);
-        await Api.getInstance().send({
-          type: MessagesTypes.ANSWER,
-          payload: { description: answer },
-        });
-      } else if (type === MessagesTypes.ANSWER) {
-        const { description } = payload;
-        await peerConnection.pc.setRemoteDescription(description);
+  private static * onOffer(pc: PeerConnection, from: string, payload: any) {
+    try {
+      const { description } = payload;
+      if (pc.pc.signalingState !== 'stable') {
+        yield pc.pc.setLocalDescription({ type: 'rollback' });
       }
+      yield pc.pc.setRemoteDescription(description);
+
+      yield pc.pc.setLocalDescription(yield pc.pc.createAnswer());
+      yield Api.getInstance().send({
+        type: MessagesTypes.ANSWER,
+        to: from,
+        payload: { description: pc.pc.localDescription },
+      });
+
+      yield pc.startConnection();
     } catch (e) {
       console.error(e);
     }
@@ -93,7 +113,6 @@ export class PeerConnection {
 
     this.pc.onicecandidate = this.onICECandidate.bind(this);
     this.pc.oniceconnectionstatechange = this.onICEConnectionStateChange.bind(this);
-    this.pc.onnegotiationneeded = this.onNegotiationNeeded.bind(this);
     this.pc.onconnectionstatechange = this.onConnectionStateChange.bind(this);
     this.pc.ontrack = this.onTrack.bind(this);
   }
@@ -118,22 +137,8 @@ export class PeerConnection {
     }
   }
 
-  private async onNegotiationNeeded() {
-    try {
-      if (this.pc.signalingState !== 'stable') return;
-
-      const offer = await this.pc.createOffer({ iceRestart: true });
-      await this.pc.setLocalDescription(offer);
-      await Api.getInstance().send({
-        type: MessagesTypes.OFFER,
-        to: this.remoteId,
-        payload: { description: offer },
-      });
-    } catch (e) { console.error(e); }
-  }
-
   private onConnectionStateChange() {
-    switch (this.pc.signalingState) {
+    switch (this.pc.connectionState) {
       case 'closed':
         this.close();
         break;
@@ -148,10 +153,10 @@ export class PeerConnection {
   }
 
   public static * getLocalStream() {
-    console.debug(navigator.mediaDevices.getSupportedConstraints());
     if (!this._localStream) {
       try {
         const constrains: MediaStreamConstraints = {
+          audio: true,
           video: { aspectRatio: 1 },
         };
         this._localStream = yield navigator.mediaDevices.getUserMedia(constrains);
@@ -189,11 +194,23 @@ export class PeerConnection {
   }
 
   public * startConnection() {
+    if (this.started) return;
+
     const localStream: MediaStream = yield PeerConnection.getLocalStream();
     localStream.getTracks()
       .forEach(t => this.pc.addTrack(t, localStream));
 
-    this.pc.createDataChannel('data');
+    if (this.pc.signalingState !== 'stable') {
+      yield this.pc.setLocalDescription({ type: 'rollback' });
+    }
+
+    yield this.pc.setLocalDescription(yield this.pc.createOffer());
+    yield Api.getInstance().send({
+      type: MessagesTypes.OFFER,
+      to: this.remoteId,
+      payload: { description: this.pc.localDescription },
+    });
+    this.started = true;
   }
 
   public close(noDispatch: boolean = false) {

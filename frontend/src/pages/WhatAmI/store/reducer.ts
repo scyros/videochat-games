@@ -7,6 +7,8 @@ import {
   CONNECT,
   LOCALSTREAM_AVAILABLE,
   REMOTESTREAM_AVAILABLE,
+  REMOTESTREAM_UNAVAILABLE,
+  RemoteStreamUnavailableAction,
 } from '../../../services'
 
 import {
@@ -14,9 +16,11 @@ import {
   GameRoomState,
   GoneAction,
   JoinedAction,
+  SetQuestAction,
   CHANGE_CURRENT_PLAYER,
   GONE,
   JOINED,
+  SET_QUEST,
 } from './types';
 
 interface ActionHandler {
@@ -44,19 +48,6 @@ const ACTION_HANDLERS: ActionHandler = {
       namespace,
     }
   },
-  [JOINED]: (state, _action) => {
-    const action = _action as JoinedAction;
-    const { payload: { id, peerConnection: connection, timestamp: join } } = action;
-    const { players } = state;
-    if (!players.has(id)) {
-      players.set(id, { id, connection, join, isLocal: !Boolean(connection) });
-    }
-
-    return {
-      ...state,
-      players,
-    };
-  },
   [GONE]: (state, _action) => {
     const action = _action as GoneAction;
     const { payload: { id } } = action;
@@ -80,6 +71,19 @@ const ACTION_HANDLERS: ActionHandler = {
       players,
     };
   },
+  [JOINED]: (state, _action) => {
+    const action = _action as JoinedAction;
+    const { payload: { id, peerConnection: connection, timestamp: join } } = action;
+    const { players } = state;
+    if (!players.has(id)) {
+      players.set(id, { id, connection, join, isLocal: !Boolean(connection) });
+    }
+
+    return {
+      ...state,
+      players,
+    };
+  },
   [LOCALSTREAM_AVAILABLE]: (state, _action) => {
     const action = _action as LocalStreamAvailableAction;
     const player = state.players.get(state.myId);
@@ -97,6 +101,31 @@ const ACTION_HANDLERS: ActionHandler = {
     const player = state.players.get(id);
     if (player) {
       player.stream = stream;
+      state.players.delete(id);
+      state.players.set(id, { ...player });
+    }
+
+    return { ...state };
+  },
+  [REMOTESTREAM_UNAVAILABLE]: (state, _action) => {
+    const action = _action as RemoteStreamUnavailableAction;
+    const { payload: { id } } = action;
+    const player = state.players.get(id);
+    if (player) {
+      player.stream = undefined;
+      state.players.delete(id);
+      state.players.set(id, { ...player });
+    }
+
+    return { ...state };
+  },
+  [SET_QUEST]: (state, _action) => {
+    const action = _action as SetQuestAction;
+    const { payload: { id, quest } } = action;
+    const player = state.players.get(id);
+
+    if (player) {
+      player.quest = quest;
       state.players.delete(id);
       state.players.set(id, { ...player });
     }

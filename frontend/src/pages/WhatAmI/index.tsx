@@ -12,8 +12,7 @@ import {
   currentPlayer,
   imHostPlayer,
   localPlayer,
-  namespace,
-  myId,
+  nextPlayer,
   players,
 } from './store';
 
@@ -42,20 +41,26 @@ class GameRoom extends React.PureComponent<GameRoomProps, GameRoomState> {
   }
 
   render() {
-    const { currentPlayer, players } = this.props;
+    const { currentPlayer, imHost, nextPlayer, players } = this.props;
 
     return (
       <Layout fullHeight>
         <div className="room">
           <div className="game">
             <div className="mainPlayersContainer">
-              <CurrentPlayer player={currentPlayer} />
+              <CurrentPlayer
+                imHost={imHost}
+                nextPlayer={nextPlayer}
+                player={currentPlayer}
+              />
               <div className="players">
-                {players.slice(0, 2).map(p => <Player key={p.id} player={p} />)}
+                {players.slice(0, 2).map(p =>
+                  <Player className="playerContainer" key={p.id} player={p} />)}
               </div>
             </div>
             <div className="secondaryPlayersContainer">
-              {players.slice(2).map(p => <Player key={p.id} player={p} />)}
+              {players.slice(2).map(p =>
+                <Player className="playerContainer" key={p.id} player={p} />)}
             </div>
           </div>
         </div>
@@ -66,15 +71,14 @@ class GameRoom extends React.PureComponent<GameRoomProps, GameRoomState> {
 
 const mapStateToProps = (state: RootState) => ({
   currentPlayer: currentPlayer(state),
-  imHostPlayer: imHostPlayer(state),
+  imHost: imHostPlayer(state),
   localPlayer: localPlayer(state),
-  myId: myId(state),
-  namespace: namespace(state),
   players: players(state),
 });
 const mapDispatchToProps = (dispatch: Dispatch) => ({
   ...bindActionCreators({
     connect: Api.getInstance().connect,
+    nextPlayer,
   }, dispatch),
 });
 
