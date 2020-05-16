@@ -1,15 +1,22 @@
 import { AnyAction } from 'redux';
 
-import { LOCALSTREAM_AVAILABLE, LocalStreamAvailableAction } from '../../../services'
+import {
+  ConnectAction,
+  LocalStreamAvailableAction,
+  RemoteStreamAvailableAction,
+  CONNECT,
+  LOCALSTREAM_AVAILABLE,
+  REMOTESTREAM_AVAILABLE,
+} from '../../../services'
 
 import {
+  ChangeCurrentPlayerAction,
   GameRoomState,
-  JoinAction,
+  GoneAction,
   JoinedAction,
-  LeaveAction,
-  JOIN,
+  CHANGE_CURRENT_PLAYER,
+  GONE,
   JOINED,
-  LEAVE,
 } from './types';
 
 interface ActionHandler {
@@ -17,38 +24,41 @@ interface ActionHandler {
 }
 
 const ACTION_HANDLERS: ActionHandler = {
-  [JOIN]: (state, _action) => {
-    const action = _action as JoinAction;
-    const { payload: { id, namespace, timestamp } } = action;
-    const { players } = state;
-    if (!players.has(id)) {
-      players.set(id, { id, join: timestamp });
-    }
-
+  [CHANGE_CURRENT_PLAYER]: (state, _action) => {
+    const action = _action as ChangeCurrentPlayerAction;
+    const { payload: { id: currentPlayerId } } = action;
+    
     return {
       ...state,
-      currentPlayerId: id,
-      myId: id,
-      namespace,
-      players,
+      currentPlayerId,
     };
+  },
+  [CONNECT]: (state, _action) => {
+    const action = _action as ConnectAction;
+    const { payload: { id: myId, namespace } } = action;
+    
+    return {
+      ...state,
+      currentPlayerId: myId,
+      myId,
+      namespace,
+    }
   },
   [JOINED]: (state, _action) => {
     const action = _action as JoinedAction;
-    const { payload: { id, timestamp, currentPlayerId } } = action;
+    const { payload: { id, peerConnection: connection, timestamp: join } } = action;
     const { players } = state;
     if (!players.has(id)) {
-      players.set(id, { id, join: timestamp });
+      players.set(id, { id, connection, join, isLocal: !Boolean(connection) });
     }
 
     return {
       ...state,
-      currentPlayerId: currentPlayerId || state.currentPlayerId,
       players,
     };
   },
-  [LEAVE]: (state, _action) => {
-    const action = _action as LeaveAction;
+  [GONE]: (state, _action) => {
+    const action = _action as GoneAction;
     const { payload: { id } } = action;
     const { players } = state;
 
@@ -61,6 +71,7 @@ const ACTION_HANDLERS: ActionHandler = {
       currentPlayerId = playersList[playerIdx + 1].id;
     }
 
+    players.get(id)?.connection?.close(true);
     players.delete(id);
 
     return {
@@ -72,9 +83,23 @@ const ACTION_HANDLERS: ActionHandler = {
   [LOCALSTREAM_AVAILABLE]: (state, _action) => {
     const action = _action as LocalStreamAvailableAction;
     const player = state.players.get(state.myId);
-    player!.stream = action.payload.stream;
-    state.players.delete(state.myId);
-    state.players.set(state.myId, { ...player! });
+    if (player) {
+      player.stream = action.payload.stream;
+      state.players.delete(state.myId);
+      state.players.set(state.myId, { ...player });
+    }
+
+    return { ...state };
+  },
+  [REMOTESTREAM_AVAILABLE]: (state, _action) => {
+    const action = _action as RemoteStreamAvailableAction;
+    const { id, stream } = action.payload;
+    const player = state.players.get(id);
+    if (player) {
+      player.stream = stream;
+      state.players.delete(id);
+      state.players.set(id, { ...player });
+    }
 
     return { ...state };
   },

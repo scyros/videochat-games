@@ -3,9 +3,15 @@ import { Action } from 'redux';
 import { eventChannel, END } from 'redux-saga';
 import { call, put, take } from 'redux-saga/effects';
 
-import { JOIN } from '../../pages/WhatAmI/store';
-
+export const CONNECT = 'API_CONNECT';
 export const INCOMING_MESSAGE = 'API_INCOMING_MESSAGE';
+
+export interface ConnectAction extends Action<typeof CONNECT> {
+  payload: {
+    id: string;
+    namespace: string;
+  }
+}
 export interface IncomingMessageAction extends Action<typeof INCOMING_MESSAGE> {
   payload: { msg: Message };
 }
@@ -41,7 +47,7 @@ export class Api {
   }
 
   * saga() {
-    const { payload: { id, namespace: ns } } = yield take(JOIN);
+    const { payload: { id, namespace: ns } }: ConnectAction = yield take(CONNECT);
 
     this.id = id;
     this.namespace = ns;
@@ -76,6 +82,13 @@ export class Api {
         });
       }
     } catch (e) { console.error(e); }
+  }
+
+  connect(id: string, namespace: string) {
+    return {
+      type: CONNECT,
+      payload: { id, namespace },
+    };
   }
 
   async send(msg: Message) {

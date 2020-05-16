@@ -1,18 +1,97 @@
 .room, .game {
-  height: 100%;
-  width: 100%;
+  overflow-y: auto;
+  & {
+    scrollbar-width: thin;
+    scrollbar-color: rgba($color: #fff, $alpha: 0.15) transparent;
+  
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;    
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba($color: #fff, $alpha: 0.15);
+      border-radius: 4px;
+    }
+  }
 }
 
-.room {
+@media screen and (min-width: 720px) {
   .game {
-    display: flex;
-    align-items: stretch;
-    justify-content: stretch;
-  }
+    margin: auto;
+    max-width: 720px;
 
-  @media screen and (orientation: landscape) {
-    .game {
-      flex-direction: row;
+    .mainPlayersContainer {
+      display: flex;
+      flex-wrap: wrap;
+      .currentPlayerContainer {
+        flex: 66.6666%;
+        height: 480px;
+        video {
+          height: 480px;
+        }
+      }
+      .players {
+        flex: 33.3333%;
+        .playerContainer {
+          height: 240px;
+          video {
+            height: 240px;
+          }
+        }
+      }
+    }
+
+    .secondaryPlayersContainer {
+      display: flex;
+      flex-wrap: wrap;
+
+      .playerContainer {
+        flex: 33.3333%;
+        max-width: 33.3333%;
+        video {
+          max-width: 100%;
+          height: 240px;
+        }
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 719px) {
+  .game {
+    .mainPlayersContainer {
+      .currentPlayerContainer {
+        width: 100vw;
+        height: 100vw;
+        video {
+          width: 100vw;
+        }
+      }
+
+      .players {
+        display: flex;
+        .playerContainer {
+          flex: 50vw;
+          max-width: 50vw;
+          height: 50vw;
+          video {
+            max-width: 100%;
+          }
+        }
+      }
+    }
+
+    .secondaryPlayersContainer {
+      display: flex;
+      .playerContainer {
+        flex: 50vw;
+        max-width: 50vw;
+        video {
+          max-width: 100%;
+        }
+      }
     }
   }
 }

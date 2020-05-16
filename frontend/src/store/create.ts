@@ -3,6 +3,7 @@ import createSagaMiddleware from 'redux-saga';
 
 import { rootReducer } from './reducer';
 import { rootSaga } from '../saga';
+import { PeerConnection } from '../services';
 
 export function createStore() {
   const composeEnhancers: Function =
@@ -15,6 +16,7 @@ export function createStore() {
   );
 
   sagaMiddleware.run(rootSaga);
+  PeerConnection.setDispatch(store.dispatch);
 
   return store;
 }

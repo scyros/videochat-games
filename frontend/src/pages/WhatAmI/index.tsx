@@ -4,16 +4,17 @@ import { withRouter, RouteComponentProps } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CurrentPlayer, Layout } from '../../components';
+import { Api } from '../../services';
+import { CurrentPlayer, Layout, PlayerDisplay as Player } from '../../components';
 import { RootState } from '../../store';
 
 import {
   currentPlayer,
   imHostPlayer,
-  joinMe,
   localPlayer,
   namespace,
   myId,
+  players,
 } from './store';
 
 import './styles.scss';
@@ -35,20 +36,27 @@ class GameRoom extends React.PureComponent<GameRoomProps, GameRoomState> {
   }
 
   async componentDidMount() {
-    const { joinMe, match: { params: { namespace } } } = this.props;
+    const { connect, match: { params: { namespace } } } = this.props;
     const { id } = this.state;
-    joinMe(id, namespace);
+    connect(id, namespace);
   }
 
   render() {
-    const { currentPlayer } = this.props;
+    const { currentPlayer, players } = this.props;
 
     return (
       <Layout fullHeight>
         <div className="room">
           <div className="game">
-            {currentPlayer ? <CurrentPlayer player={currentPlayer} /> : <div />}
-            <div className="players"></div>
+            <div className="mainPlayersContainer">
+              <CurrentPlayer player={currentPlayer} />
+              <div className="players">
+                {players.slice(0, 2).map(p => <Player key={p.id} player={p} />)}
+              </div>
+            </div>
+            <div className="secondaryPlayersContainer">
+              {players.slice(2).map(p => <Player key={p.id} player={p} />)}
+            </div>
           </div>
         </div>
       </Layout>
@@ -62,10 +70,11 @@ const mapStateToProps = (state: RootState) => ({
   localPlayer: localPlayer(state),
   myId: myId(state),
   namespace: namespace(state),
+  players: players(state),
 });
 const mapDispatchToProps = (dispatch: Dispatch) => ({
   ...bindActionCreators({
-    joinMe,
+    connect: Api.getInstance().connect,
   }, dispatch),
 });
 

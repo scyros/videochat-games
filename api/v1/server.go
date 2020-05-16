@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 // Server serves all other requests apart from SSE
@@ -20,7 +21,9 @@ func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	decoder := json.NewDecoder(req.Body)
-	var msg Message
+	msg := Message{
+		Payload: map[string]interface{}{},
+	}
 	err := decoder.Decode(&msg)
 	if err != nil {
 		http.Error(rw, "Invalid message", http.StatusBadRequest)
@@ -38,6 +41,9 @@ func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if _, ok := msg.Payload["timestamp"]; !ok {
+		msg.Payload["timestamp"] = time.Now().UTC().UnixNano()
+	}
 	s.SSEServer.Broadcast(&msg)
 	rw.WriteHeader(http.StatusOK)
 }

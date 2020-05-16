@@ -1,7 +1,9 @@
 import { saga as whatAmISaga } from '../pages/WhatAmI/saga';
-import { Api } from '../services';
+import { Api, PeerConnection } from '../services';
 
 export default [
-  whatAmISaga,
   Api.getInstance().saga,
+  PeerConnection.saga,
+
+  whatAmISaga,
 ];

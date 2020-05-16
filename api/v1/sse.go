@@ -17,11 +17,11 @@ type Client struct {
 
 // Message represents a message to be sent to a client
 type Message struct {
-	From      string      `json:"from"`
-	Namespace string      `json:"ns"`
-	Payload   interface{} `json:"payload"`
-	To        string      `json:"to"`
-	Type      string      `json:"type"`
+	From      string                 `json:"from"`
+	Namespace string                 `json:"ns"`
+	Payload   map[string]interface{} `json:"payload"`
+	To        string                 `json:"to"`
+	Type      string                 `json:"type"`
 }
 
 // Payload for messages created in the server
@@ -114,10 +114,20 @@ func (sse *SSEServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	msg := &Message{
 		From:      client.ID,
 		Namespace: client.Namespace,
-		Type:      "join",
-		Payload:   &Payload{Timestamp: time.Now().UTC().UnixNano() / 1e6},
+		Payload: map[string]interface{}{
+			"timestamp": time.Now().UTC().UnixNano(),
+		},
+		Type: "join",
 	}
-	sse.Broadcast(msg)
+	sse.Broadcast(msg) // notify all except me
+	selfMsg := &Message{
+		From:      msg.From,
+		Namespace: msg.Namespace,
+		To:        msg.From,
+		Type:      msg.Type,
+		Payload:   msg.Payload,
+	}
+	sse.Notifier <- selfMsg // notify myself
 
 	notify := rw.(http.CloseNotifier).CloseNotify()
 	go func() {
@@ -127,8 +137,10 @@ func (sse *SSEServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		msg := &Message{
 			From:      client.ID,
 			Namespace: client.Namespace,
-			Type:      "leave",
-			Payload:   &Payload{Timestamp: time.Now().UTC().UnixNano() / 1e6},
+			Payload: map[string]interface{}{
+				"timestamp": time.Now().UTC().UnixNano(),
+			},
+			Type: "gone",
 		}
 		sse.Broadcast(msg)
 	}()

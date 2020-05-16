@@ -1,19 +1,18 @@
 import React from 'react';
 
-import styles from './styles.module.scss';
 import { Player } from '../../pages/WhatAmI/store';
 import { Video } from '../Video';
 
 interface CurrentPlayerProps {
-  player: Player;
+  player?: Player;
 }
 
 export const CurrentPlayer: React.SFC<CurrentPlayerProps> = ({ player }) => {
+  if (!player) return null;
+
   return (
-    <div className={styles.playerContainer}>
-      <div className={styles.player}>
-        <Video stream={player.stream} />
-      </div>
+    <div className="currentPlayerContainer">
+      <Video stream={player.stream} />
     </div>
   );
 };
