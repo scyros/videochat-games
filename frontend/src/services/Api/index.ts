@@ -33,7 +33,7 @@ export class Api {
 
   private constructor() {
     this.axiosInstance = axios.create({
-      baseURL: process.env.REACT_APP_API_HOST,
+      baseURL: '/api/v1',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -53,7 +53,7 @@ export class Api {
     this.namespace = ns;
 
     const channel = yield call(() => eventChannel((emitter) => {
-      const source = new EventSource(`${process.env.REACT_APP_API_EVENTS}?id=${id}&ns=${ns}`);
+      const source = new EventSource(`/api/v1/events?id=${id}&ns=${ns}`);
       
       source.onmessage = ({ data }: MessageEvent) => {
         try {
