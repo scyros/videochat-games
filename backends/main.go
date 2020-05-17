@@ -1,13 +1,9 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net/http"
-)
-
-var (
-	port = flag.String("port", "3005", "port to listen")
+	"os"
 )
 
 type intercept404 struct {
@@ -64,8 +60,14 @@ func main() {
 		staticServer: http.FileServer(http.Dir("./public")),
 	}
 
-	log.Printf("Listening on :" + *port + "...")
-	err := http.ListenAndServe(":"+*port, mux)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+
+	log.Printf("Listening on :" + port + "...")
+	err := http.ListenAndServe(":"+port, mux)
 	if err != nil {
 		log.Panicln(err)
 	}

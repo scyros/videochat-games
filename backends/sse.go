@@ -98,10 +98,10 @@ func (sse *SSEServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	rw.Header().Set("X-Accel-Buffering", "no")
 	rw.Header().Set("Content-Type", "text/event-stream")
 	rw.Header().Set("Cache-Control", "no-cache")
 	rw.Header().Set("Connection", "keep-alive")
-	rw.Header().Set("Access-Control-Allow-Origin", "*")
 
 	client := &Client{
 		ID:        id,

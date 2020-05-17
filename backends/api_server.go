@@ -12,10 +12,6 @@ type APIServer struct {
 }
 
 func (s *APIServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	rw.Header().Set("Access-Control-Allow-Origin", "*")
-	rw.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	rw.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-
 	if req.Method == "OPTIONS" {
 		return
 	}
@@ -48,7 +44,7 @@ func (s *APIServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 }
 
-// NewServer creates a new server
+// NewAPIServer creates a new server
 func NewAPIServer(sse *SSEServer) (server *APIServer) {
 	server = &APIServer{
 		SSEServer: sse,
